@@ -15,7 +15,7 @@ Fetch-API-Version:
     - echo API_VERSION=$VERSION > Version.txt
     - echo MAJOR_VERSION=${VERSION%%.*} >> Version.txt
   rules:
-    - if: 'CI_COMMIT_BRANCH =~ /feature-*/ || CI_COMMIT_BRANCH =~ /bugfix-*/ || CI_COMMIT_BRANCH == "develop" || CI_COMMIT_BRANCH == "staging"'
+    - if: '$CI_COMMIT_BRANCH =~ /feature-*/ || $CI_COMMIT_BRANCH =~ /bugfix-*/ || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "staging"'
       when: always
   artifacts:
     paths:
@@ -30,7 +30,7 @@ Unit-Testing-And-Code-Coverage-Check:
     - npm install
     - npm run test:cov
   rules:
-    - if: 'CI_COMMIT_BRANCH =~ /feature-*/ || CI_COMMIT_BRANCH =~ /bugfix-*/ || CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /feature-*/ || $CI_COMMIT_BRANCH =~ /bugfix-*/ || $CI_COMMIT_BRANCH == "develop"'
       when: always
   artifacts:
     paths:
@@ -48,7 +48,7 @@ Static-Code-Quality-Analysis:
     - sed -i "s/API_VERSION/${API_VERSION}/g" sonar-project.properties
     - sonar-scanner -Dsonar.qualitygate.wait=true
   rules:
-    - if: 'CI_COMMIT_BRANCH =~ /feature-*/ || CI_COMMIT_BRANCH =~ /bugfix-*/ || CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /feature-*/ || $CI_COMMIT_BRANCH =~ /bugfix-*/ || $CI_COMMIT_BRANCH == "develop"'
       when: on_success
   dependencies:
     - Fetch-API-Version
@@ -64,7 +64,7 @@ Build-And-Push-Docker-Image-DEV:
   script:
     - sh cicd-scripts/build-push-image.sh dev
   rules:
-    - if: 'CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
       when: on_success
   tags:
     - docker
@@ -83,7 +83,7 @@ Deploy-App-in-DEV:
     - sed -i "s/API_VERSION/${API_VERSION}/g" helm-chart/values.yaml
     - sh cicd-scripts/deploy.sh dev
   rules:
-    - if: 'CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
       when: on_success
   environment:
     name:  dev
@@ -100,7 +100,7 @@ Build-And-Push-Docker-Image-ST:
   script:
     - sh cicd-scripts/build-push-image.sh st
   rules:
-    - if: 'CI_COMMIT_BRANCH == "staging"'
+    - if: '$CI_COMMIT_BRANCH == "staging"'
       when: on_success
   tags:
     - docker
@@ -119,7 +119,7 @@ Deploy-App-in-ST:
     - sed -i "s/API_VERSION/${API_VERSION}/g" helm-chart/values.yaml
     - sh cicd-scripts/deploy.sh st
   rules:
-    - if: 'CI_COMMIT_BRANCH == "staging"'
+    - if: '$CI_COMMIT_BRANCH == "staging"'
       when: on_success
   environment:
     name:  st
