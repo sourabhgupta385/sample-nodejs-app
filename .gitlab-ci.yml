@@ -1,0 +1,129 @@
+stages:
+  - Fetch-API-Version
+  - Unit-Testing-And-Code-Coverage-Check
+  - Static-Code-Quality-Analysis
+  - Build-And-Push-Docker-Image-DEV
+  - Deploy-App-in-DEV
+  - Build-And-Push-Docker-Image-ST
+  - Deploy-App-in-ST
+
+Fetch-API-Version:
+  stage: Fetch-API-Version
+  image: node:12.16.1-alpine
+  script:
+    - export VERSION=$(node -e "console.log(require('./package.json').version)")
+    - echo API_VERSION=$VERSION > Version.txt
+    - echo MAJOR_VERSION=${VERSION%%.*} >> Version.txt
+  rules:
+    - if: 'CI_COMMIT_BRANCH =~ /feature-*/ || CI_COMMIT_BRANCH =~ /bugfix-*/ || CI_COMMIT_BRANCH == "develop" || CI_COMMIT_BRANCH == "staging"'
+      when: always
+  artifacts:
+    paths:
+      - Version.txt
+  tags:
+    - docker
+
+Unit-Testing-And-Code-Coverage-Check:
+  stage: Unit-Testing-And-Code-Coverage-Check
+  image: node:12.16.1-alpine
+  script:
+    - npm install
+    - npm run test:cov
+  rules:
+    - if: 'CI_COMMIT_BRANCH =~ /feature-*/ || CI_COMMIT_BRANCH =~ /bugfix-*/ || CI_COMMIT_BRANCH == "develop"'
+      when: always
+  artifacts:
+    paths:
+      - coverage/
+  tags:
+    - docker
+
+Static-Code-Quality-Analysis:
+  stage: Static-Code-Quality-Analysis
+  image:
+    name: sonar-scanner-cli:latest
+    entrypoint: [""]
+  script:
+    - source Version.txt
+    - sed -i "s/API_VERSION/${API_VERSION}/g" sonar-project.properties
+    - sonar-scanner -Dsonar.qualitygate.wait=true
+  rules:
+    - if: 'CI_COMMIT_BRANCH =~ /feature-*/ || CI_COMMIT_BRANCH =~ /bugfix-*/ || CI_COMMIT_BRANCH == "develop"'
+      when: on_success
+  dependencies:
+    - Fetch-API-Version
+    - Unit-Testing-And-Code-Coverage-Check
+  tags:
+    - docker
+
+Build-And-Push-Docker-Image-DEV:
+  stage: Build-And-Push-Docker-Image-DEV
+  image: docker:git
+  services: 
+    - docker:dind
+  script:
+    - sh cicd-scripts/build-push-image.sh dev
+  rules:
+    - if: 'CI_COMMIT_BRANCH == "develop"'
+      when: on_success
+  tags:
+    - docker
+
+Deploy-App-in-DEV:
+  stage: Deploy-App-in-DEV
+  image: sourabh385/helm-oc-cli
+  before_script:
+    - sed -i "s/DB_USER/${DB_USER}/g" helm-chart/values.yaml
+    - sed -i "s/DB_PASS/${DB_PASS}/g" helm-chart/values.yaml
+    - sed -i "s/CI_ENVIRONMENT_SLUG/${CI_ENVIRONMENT_SLUG}/g" helm-chart/values.yaml
+    - sed -i "s/CI_PROJECT_PATH_SLUG/${CI_PROJECT_PATH_SLUG}/g" helm-chart/values.yaml
+  script:
+    - source Version.txt
+    - sed -i "s/API_VERSION/${API_VERSION}/g" helm-chart/Chart.yaml
+    - sed -i "s/API_VERSION/${API_VERSION}/g" helm-chart/values.yaml
+    - sh cicd-scripts/deploy.sh dev
+  rules:
+    - if: 'CI_COMMIT_BRANCH == "develop"'
+      when: on_success
+  environment:
+    name:  dev
+  dependencies:
+    - Fetch-API-Version  
+  tags:
+    - docker
+
+Build-And-Push-Docker-Image-ST:
+  stage: Build-And-Push-Docker-Image-ST
+  image: docker:git
+  services: 
+    - docker:dind
+  script:
+    - sh cicd-scripts/build-push-image.sh st
+  rules:
+    - if: 'CI_COMMIT_BRANCH == "staging"'
+      when: on_success
+  tags:
+    - docker
+
+Deploy-App-in-ST:
+  stage: Deploy-App-in-ST
+  image: sourabh385/helm-oc-cli
+  before_script:
+    - sed -i "s/DB_USER/${DB_USER}/g" helm-chart/values.yaml
+    - sed -i "s/DB_PASS/${DB_PASS}/g" helm-chart/values.yaml
+    - sed -i "s/CI_ENVIRONMENT_SLUG/${CI_ENVIRONMENT_SLUG}/g" helm-chart/values.yaml
+    - sed -i "s/CI_PROJECT_PATH_SLUG/${CI_PROJECT_PATH_SLUG}/g" helm-chart/values.yaml
+  script:
+    - source Version.txt
+    - sed -i "s/API_VERSION/${API_VERSION}/g" helm-chart/Chart.yaml
+    - sed -i "s/API_VERSION/${API_VERSION}/g" helm-chart/values.yaml
+    - sh cicd-scripts/deploy.sh st
+  rules:
+    - if: 'CI_COMMIT_BRANCH == "staging"'
+      when: on_success
+  environment:
+    name:  st
+  dependencies:
+    - Fetch-API-Version  
+  tags:
+    - docker

@@ -1,0 +1,36 @@
+api:
+  name: sample-nodejs-app
+  version: 0.0.1
+  address: 0.0.0.0
+  port: 8080
+
+image:
+  apiImage: ""
+  pullPolicy: IfNotPresent
+
+deployment:
+  replicas: 1
+  strategy: RollingUpdate
+  environment: ""
+
+db:
+  host: 127.0.0.1
+  port: 27017
+
+secrets:
+  db_user: DB_USER
+  db_pass: DB_PASS
+
+resources:
+  memoryRequest: 128Mi
+  memoryLimit: 256Mi
+  cpuRequest: 100m
+  cpuLimit: 200m
+
+autoscaler:
+  minReplica: 1
+  maxReplica: 2
+  CPUUtilizationPercent: 75
+
+gitlab_env: CI_ENVIRONMENT_SLUG
+gitlab_app: CI_PROJECT_PATH_SLUG

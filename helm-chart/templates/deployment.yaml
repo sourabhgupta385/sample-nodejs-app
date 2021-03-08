@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+  labels:
+    app: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+  annotations:
+    app.gitlab.com/env: {{ .Values.gitlab_env | quote }}
+    app.gitlab.com/app: {{ .Values.gitlab_app | quote }}
+spec:
+  strategy:
+    type: {{ .Values.deployment.strategy }}
+  replicas: {{ .Values.deployment.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+      annotations:
+        app.gitlab.com/env: {{ .Values.gitlab_env | quote }}
+        app.gitlab.com/app: {{ .Values.gitlab_app | quote }}
+    spec:
+      containers:
+      - name: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+        image: {{ .Values.image.apiImage }}
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        ports:
+        - containerPort: {{ .Values.api.port | int }}
+        resources:
+          requests:
+            memory: {{ .Values.resources.memoryRequest | quote }}
+            cpu: {{ .Values.resources.cpuRequest | quote }}
+          limits:
+            memory: {{ .Values.resources.memoryLimit | quote }}
+            cpu: {{ .Values.resources.cpuLimit | quote }}
+        envFrom:
+          - configMapRef:
+              name: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+          - secretRef:
+              name: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}    
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.api.port | int }}
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.api.port | int }}
+        

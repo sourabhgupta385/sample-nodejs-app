@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Namespace }}-{{ .Values.api.name }}-monitor
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: federated-monitor
+    name: {{ .Release.Namespace }}-{{ .Values.api.name }}-monitor
+spec:
+  endpoints:
+  - interval: 5s
+    path: /metrics
+    port: web
+    scheme: http
+  jobLabel: {{ .Release.Namespace }}-{{ .Values.api.name }}-monitor
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+      service: {{ .Values.api.name }}     

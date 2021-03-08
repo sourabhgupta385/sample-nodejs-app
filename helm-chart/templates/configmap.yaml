@@ -1,0 +1,9 @@
+kind: kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+data:
+  API_INFO_NAME: {{ .Values.api.name | quote }}
+  API_INFO_VERSION: {{ .Values.api.version | quote }}
+  API_ADDR: {{ .Values.api.address | quote }}
+  API_PORT: {{ .Values.api.port | quote }}

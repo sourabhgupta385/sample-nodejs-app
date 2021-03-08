@@ -1,0 +1,13 @@
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+spec:
+  host: ""
+  to:
+    kind: Service
+    name: {{ printf "%s-%s" .Values.api.name .Values.deployment.environment }}
+status:
+  ingress:
+    - host: ""
+      routerName: {{ .Values.api.name }}
